@@ -74,10 +74,10 @@ x-airflow-common:
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
-    - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
-    - ${AIRFLOW_PROJ_DIR:-.}/keys:/opt/airflow/keys
-    - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-.}/airflow/dags:/opt/airflow/dags
+    - ${AIRFLOW_PROJ_DIR:-.}/airflow/logs:/opt/airflow/logs
+    - ${AIRFLOW_PROJ_DIR:-.}/airflow/keys:/opt/airflow/keys
+    - ${AIRFLOW_PROJ_DIR:-.}/airflow/plugins:/opt/airflow/plugins
     - ${AIRFLOW_PROJ_DIR:-.}/terraform:/opt/airflow/terraform
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
@@ -247,7 +247,7 @@ services:
           echo "   https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html#before-you-begin"
           echo
         fi
-        mkdir -p /sources/logs /sources/dags /sources/plugins /sources/keys /sources/terraform
+        mkdir -p /sources/airflow/logs /sources/airflow/dags /sources/airflow/plugins /sources/airflow/keys /sources/terraform
         chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins,keys,terraform}
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
