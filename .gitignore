@@ -130,8 +130,9 @@ celerybeat.pid
 # Terraform
 *.tfstate
 *.tfstate.backup
-terraform*
+terraform.*
 *.terraform
+*.lock.hcl
 
 # Environments
 *.tfvars
