@@ -143,11 +143,11 @@ variable "github_username" {
     type        = string
 }
 
+output "bucket_name" {
+    value = google_storage_bucket.bucket.name
+}
+
 output "vm_public_ip" {
     value = google_compute_instance.trademe_viewer.network_interface[0].access_config[0].nat_ip
     description = "Public IP address of the VM instance"
-}
-
-output "bucket_name" {
-    value = google_storage_bucket.bucket.name
 }
