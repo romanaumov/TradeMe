@@ -29,6 +29,11 @@ RUN cd $HOME && \
 
 RUN pip install apache-airflow-providers-ssh apache-airflow-providers-google paramiko
 
+# Install additional Python packages
+RUN pip install --no-cache-dir \
+    apache-airflow-providers-google \
+    dlt
+
 # Entry point for Airflow webserver
 # ENTRYPOINT ["/entrypoint.sh"]
 # CMD ["webserver"]

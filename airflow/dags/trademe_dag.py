@@ -4,7 +4,8 @@ import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
-from airflow.providers.google.cloud.operators.bigquery import BigQueryExecuteQueryOperator
+# from airflow.providers.google.cloud.operators.bigquery import BigQueryExecuteQueryOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 from airflow.utils.dates import days_ago
 from google.cloud import storage
 from google.oauth2 import service_account
@@ -225,7 +226,7 @@ with DAG(
     )
     
     # Task 5a: Transform Watchlist data (dbt-like transformation)
-    transform_watchlist_task = BigQueryExecuteQueryOperator(
+    transform_watchlist_task = BigQueryInsertJobOperator(
         task_id='transform_watchlist_to_prod',
         sql=f"""
         CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.watchlist` AS
@@ -251,7 +252,7 @@ with DAG(
     )
     
     # Task 5b: Transform Rentals data (dbt-like transformation)
-    transform_rentals_task = BigQueryExecuteQueryOperator(
+    transform_rentals_task = BigQueryInsertJobOperator(
         task_id='transform_rentals_to_prod',
         sql=f"""
         CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.rentals` AS
