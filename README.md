@@ -133,8 +133,10 @@ TradeMe/
    ```
 
 2. Set up environment variables:
-   
-   - Create in the Secret Google Manager variable .env, service account key, credentials to TradeMe access.
+
+   - Create OAuth credentials on the TradeMe platform (register an app and get secret tokens from TradeMe)
+   - Create service account key in the Google Cloud
+   - Create secret variables in Google Secret Manager .env, service account key, TradeMe access credentials.
 
 3. Access the Airflow UI at http://<VM_EXTERNAL_IP>:8080 (default username/password: airflow/airflow)
 
@@ -206,28 +208,28 @@ Based on the DE Zoomcamp Project Evaluation Criteria:
 
 * Problem description
 * 
-    [x] 4 points: The problem is well described in the Background and Project Goal sections, clearly explaining what problem the project solves.
+    [x] 4 points: Problem is well described and it's clear what the problem the project solves
 
 * Cloud
 * 
-    [x] 4 points: The project is developed in Google Cloud Platform and uses Terraform as an Infrastructure as Code (IaC) tool.
+    [x] 4 points: The project is developed in the cloud and IaC tools are used
   
 * Data ingestion (Batch / Workflow orchestration)
 * 
-    [x] 4 points: End-to-end pipeline using Apache Airflow with multiple steps in the DAG, extracting data from TradeMe API and uploading to Google Cloud Storage data lake.
+    [x] 4 points: End-to-end pipeline: multiple steps in the DAG, uploading data to data lake
 
 * Data warehouse
 * 
-    [x] 4 points: Tables in BigQuery are partitioned by date and clustered by region_id, optimized for analytical queries on rental data.
+    [x] 4 points: Tables are partitioned and clustered in a way that makes sense for the upstream queries (with explanation)
 
 * Transformations
 * 
-    [x] 2 points: SQL transformations are performed in BigQuery to create fact tables from raw data.
+    [x] 2 points: Simple SQL transformation (no dbt or similar tools)
 
 * Dashboard
 * 
-    [x] 4 points: A dashboard with multiple tiles showing rental price distributions, trends, and comparisons.
+    [x] 4 points: A dashboard with 2 tiles
 
 * Reproducibility
 * 
-    [x] 4 points: Clear instructions are provided for both local development and cloud deployment, with detailed steps for running the code.
+    [x] 4 points: Instructions are clear, it's easy to run the code, and the code works
