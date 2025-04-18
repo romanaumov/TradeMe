@@ -228,59 +228,67 @@ with DAG(
     # Task 5a: Transform Watchlist data (dbt-like transformation)
     transform_watchlist_task = BigQueryInsertJobOperator(
         task_id='transform_watchlist_to_prod',
-        sql=f"""
-        CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.watchlist` AS
-        SELECT
-            ListingId,
-            Title,
-            Category,
-            StartPrice,
-            BuyNowPrice,
-            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', StartDate) AS StartDate,
-            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', EndDate) AS EndDate,
-            ListingLength,
-            HasGallery,
-            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', AsAt) AS AsAt,
-            CategoryPath,
-            PictureHref,
-            RegionId,
-            Region,
-            CURRENT_TIMESTAMP() AS etl_timestamp
-        FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.watchlist`
-        """,
-        use_legacy_sql=False,
+        configuration={
+            'query': {
+                'query': f"""
+                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.watchlist` AS
+                SELECT
+                    ListingId,
+                    Title,
+                    Category,
+                    StartPrice,
+                    BuyNowPrice,
+                    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', StartDate) AS StartDate,
+                    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', EndDate) AS EndDate,
+                    ListingLength,
+                    HasGallery,
+                    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', AsAt) AS AsAt,
+                    CategoryPath,
+                    PictureHref,
+                    RegionId,
+                    Region,
+                    CURRENT_TIMESTAMP() AS etl_timestamp
+                FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.watchlist`
+                """,
+                'useLegacySql': False,
+            }
+        },
     )
     
     # Task 5b: Transform Rentals data (dbt-like transformation)
     transform_rentals_task = BigQueryInsertJobOperator(
         task_id='transform_rentals_to_prod',
-        sql=f"""
-        CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.rentals` AS
-        SELECT
-            ListingId,
-            Title,
-            Category,
-            StartPrice,
-            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', StartDate) AS StartDate,
-            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', EndDate) AS EndDate,
-            IsFeatured,
-            HasGallery,
-            IsBold,
-            IsHighlighted,
-            PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', AsAt) AS AsAt,
-            CategoryPath,
-            PictureHref,
-            RegionId,
-            Region,
-            SuburbId,
-            Suburb,
-            RentPerWeek,
-            Bedrooms,
-            Bathrooms,
-            CURRENT_TIMESTAMP() AS etl_timestamp
-        FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.rentals`
-        """,
-        use_legacy_sql=False,
+        configuration={
+            'query': {
+                'query': f"""
+                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.rentals` AS
+                SELECT
+                    ListingId,
+                    Title,
+                    Category,
+                    StartPrice,
+                    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', StartDate) AS StartDate,
+                    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', EndDate) AS EndDate,
+                    IsFeatured,
+                    HasGallery,
+                    IsBold,
+                    IsHighlighted,
+                    PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', AsAt) AS AsAt,
+                    CategoryPath,
+                    PictureHref,
+                    RegionId,
+                    Region,
+                    SuburbId,
+                    Suburb,
+                    RentPerWeek,
+                    Bedrooms,
+                    Bathrooms,
+                    CURRENT_TIMESTAMP() AS etl_timestamp
+                FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.rentals`
+                """,
+                'useLegacySql': False,
+            }
+        },
     )
     
     # Define task dependencies

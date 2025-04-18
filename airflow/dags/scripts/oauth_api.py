@@ -98,9 +98,9 @@ class OAuthAPI:
         # Create OAuth header
         auth_params = {
             'oauth_callback': self.callback_url,
-            'oauth_consumer_key': self.consumer_key,
+            'oauth_consumer_key': self.credentials.get('consumer_key'),
             'oauth_signature_method': 'PLAINTEXT',
-            'oauth_signature': f'{self.consumer_secret}&'
+            'oauth_signature': f'{self.credentials.get('consumer_secret')}&'
         }
         
         # Build Authorization header - only encode oauth_callback
@@ -137,11 +137,11 @@ class OAuthAPI:
         
         # Create OAuth header
         auth_params = {
-            'oauth_consumer_key': self.consumer_key,
+            'oauth_consumer_key': self.credentials.get('consumer_key'),
             'oauth_token': oauth_token,
             'oauth_verifier': oauth_verifier,
             'oauth_signature_method': 'PLAINTEXT',
-            'oauth_signature': f'{self.consumer_secret}&{oauth_token_secret}'
+            'oauth_signature': f'{self.credentials.get('consumer_secret')}&{oauth_token_secret}'
         }
         
         # Build Authorization header
@@ -183,8 +183,8 @@ class OAuthAPI:
                 
                 # Update credentials with loaded data
                 self.credentials.update({
-                    "consumer_key": data.get('consumer_key', self.consumer_key),
-                    "consumer_secret": data.get('consumer_secret', self.consumer_secret),
+                    "consumer_key": data.get('consumer_key'),
+                    "consumer_secret": data.get('consumer_secret'),
                     "base_url": data.get('base_url', self.base_url),
                     "callback_url": data.get('callback_url', self.callback_url),
                     "oauth_token": data.get('oauth_token'),
@@ -203,6 +203,15 @@ class OAuthAPI:
             
     def authenticate(self):
         """Complete OAuth authentication flow"""
+        print("\n=== OAuth Authentication ===")
+        print("Checking for existing OAuth tokens...")
+        print(f"Consumer Key: {self.credentials.get('consumer_key')}")
+        print(f"Consumer Secret: {self.credentials.get('consumer_secret')}")
+        print(f"Callback URL: {self.credentials.get('callback_url')}")
+        print(f"Base URL: {self.credentials.get('base_url')}")
+        print(f"OAuth Token: {self.credentials.get('oauth_token')}")
+        print(f"OAuth Token Secret: {self.credentials.get('oauth_token_secret')}")
+        print(f"OAuth Verifier: {self.credentials.get('oauth_verifier')}")
         if not self.credentials.get('oauth_token') or not self.credentials.get('oauth_token_secret'):
             print("No valid OAuth tokens found. Proceeding to get new tokens.")
             
