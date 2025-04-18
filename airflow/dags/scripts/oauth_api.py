@@ -12,7 +12,8 @@ from urllib3.util.retry import Retry
 from google.cloud import storage
 from google.oauth2 import service_account
 
-SERVICE_ACCOUNT_FILE = "~/prod/airflow/keys/trademe-viewer-service-account.json"
+SERVICE_ACCOUNT_FILE = "/opt/airflow/keys/trademe-viewer-service-account.json"
+CREDENTIALS_PATH = "/opt/airflow/keys/credentials.json"
 PROJECT_ID = "trademe-viewer"
 BUCKET_NAME = "trademe-raw-data"
 BASE_URL = "https://api.tmsandbox.co.nz"
@@ -177,8 +178,8 @@ class OAuthAPI:
     def load_credentials(self):
         """Load credentials from file or initialize new ones"""
         try:
-            if os.path.exists('credentials.json'):
-                with open('credentials.json') as f:
+            if os.path.exists(CREDENTIALS_PATH):
+                with open(CREDENTIALS_PATH) as f:
                     data = json.load(f)
                 
                 # Update credentials with loaded data

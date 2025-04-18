@@ -46,7 +46,7 @@ pip install google-cloud-secret-manager
 cd "$REPO_DIR"
 # Load the GCP secrets
 python3 load_gcp_secrets.py "trademe-viewer" "ENV_VAR_TRADEME" "$REPO_DIR/.env"
-python3 load_gcp_secrets.py "trademe-viewer" "CRED_VAR_TRADEME" "$REPO_DIR/credentials.json"
+python3 load_gcp_secrets.py "trademe-viewer" "CRED_VAR_TRADEME" "$REPO_DIR/airflow/keys/credentials.json"
 python3 load_gcp_secrets.py "trademe-viewer" "SERV_VAR_TRADEME" "$REPO_DIR/airflow/keys/trademe-viewer-service-account.json"
 
 # Build and run the video-hierarchy recommendation containers

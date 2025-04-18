@@ -26,7 +26,6 @@ default_args = {
 # Define constants
 GCS_BUCKET = "trademe-raw-data"
 PROJECT_ID = "trademe-viewer"
-CREDENTIALS_PATH = os.path.expanduser("~/prod/airflow/keys/trademe-viewer-service-account.json")
 BIGQUERY_DATASET_STAGING = "trademe_staging"
 BIGQUERY_DATASET_PROD = "trademe_prod"
 
