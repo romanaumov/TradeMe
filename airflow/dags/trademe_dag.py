@@ -1,19 +1,19 @@
 
 import json
 import datetime
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator, BigQueryCreateEmptyDatasetOperator
 from airflow.utils.dates import days_ago
+from airflow.models import Connection
+from airflow.utils.db import provide_session
+
 from google.cloud import storage
 import dlt
 
 # Import functions from oauth_api.py
 from scripts.oauth_api import OAuthAPI, get_watchlist_data, get_rental_properties, upload_to_gcs
-
-from airflow.models import Connection
-from airflow.utils.db import provide_session
-
 
 # Define default arguments for the DAG
 default_args = {
@@ -138,7 +138,7 @@ def upload_rentals_to_gcs(**kwargs):
         "file_name": file_name
     }
     
-def upload_watchlist_to_bq():
+def upload_watchlist_to_bq_task():
     # Initialize GCS client with your service account
     storage_client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_PATH)
     bucket = storage_client.bucket(GCS_BUCKET)
@@ -176,7 +176,7 @@ def upload_watchlist_to_bq():
     print(f"Downloading latest file {latest_url}")
 
     # Define a DLT resource that reads the single latest JSON file from GCS
-    @dlt.resource(name=f"{prefix}_data", write_disposition="replace")
+    @dlt.resource(name=f"{prefix}_data_external", write_disposition="replace")
     def json_source():
         blob = bucket.blob(latest_url)
         str_json = blob.download_as_text()
@@ -200,7 +200,7 @@ def upload_watchlist_to_bq():
     print(f"Pipeline info: {info}")
 
 
-def upload_rentals_to_bq():
+def upload_rentals_to_bq_task():
     # Initialize GCS client with your service account
     storage_client = storage.Client.from_service_account_json(SERVICE_ACCOUNT_PATH)
     bucket = storage_client.bucket(GCS_BUCKET)
@@ -238,7 +238,7 @@ def upload_rentals_to_bq():
     print(f"Downloading latest file {latest_url}")
 
     # Define a DLT resource that reads the single latest JSON file from GCS
-    @dlt.resource(name=f"{prefix}_data", write_disposition="replace")
+    @dlt.resource(name=f"{prefix}_data_external", write_disposition="replace")
     def json_source():
         blob = bucket.blob(latest_url)
         str_json = blob.download_as_text()
@@ -292,13 +292,13 @@ with DAG(
         python_callable=extract_rental_data,
     )
     
-    # Task 3a: Upload Watchlist to GCS
+    # Task 3a: Upload Watchlist to GCS (Data Lake)
     upload_watchlist_gcs_task = PythonOperator(
         task_id='upload_watchlist_to_gcs',
         python_callable=upload_watchlist_to_gcs,
     )
     
-    # Task 3b: Upload Rentals to GCS
+    # Task 3b: Upload Rentals to GCS (Data Lake)
     upload_rentals_gcs_task = PythonOperator(
         task_id='upload_rentals_to_gcs',
         python_callable=upload_rentals_to_gcs,
@@ -320,23 +320,25 @@ with DAG(
         exists_ok=True
     )
     
-    upload_watchlist_to_bq_task = PythonOperator(
-        task_id='upload_watchlist_to_bq',
-        python_callable=upload_watchlist_to_bq,
+    # Task 4a: Upload Watchlist External to BQ (Data Warehouse)
+    upload_watchlist_external_to_bq_task = PythonOperator(
+        task_id='upload_watchlist_to_bq_task',
+        python_callable=upload_watchlist_to_bq_task,
     )
     
-    upload_rentals_to_bq_task = PythonOperator(
-        task_id='upload_rentals_to_bq',
-        python_callable=upload_rentals_to_bq,
+    # Task 4b: Upload Rentals External to BQ (Data Warehouse)
+    upload_rentals_external_to_bq_task = PythonOperator(
+        task_id='upload_rentals_to_bq_task',
+        python_callable=upload_rentals_to_bq_task,
     )
     
-    # Task 5a: Transform Watchlist data (dbt-like transformation)
-    transform_watchlist_task = BigQueryInsertJobOperator(
+    # Task 5: Create Watchlist fact data (dbt-like transformation)
+    create_watchlist_fact_task = BigQueryInsertJobOperator(
         task_id='transform_watchlist_to_prod',
         configuration={
             'query': {
                 'query': f"""
-                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.watchlist_data` AS
+                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.watchlist_data_fact` AS
                 SELECT
                     listing_id,
                     title,
@@ -348,20 +350,42 @@ with DAG(
                     region_id,
                     region,
                     suburb
-                FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.watchlist_data`
+                FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.watchlist_data_external`
                 """,
                 'useLegacySql': False,
             }
         },
     )
     
-    # Task 5b: Transform Rentals data (dbt-like transformation)
-    transform_rentals_task = BigQueryInsertJobOperator(
+    # Task 6a: Partition and Cluster Rentals External Table (dbt-like transformation)
+    partition_and_cluster_rentals_task = BigQueryInsertJobOperator(
+        task_id='partition_and_cluster_rentals',
+        configuration={
+            'query': {
+                'query': f"""
+                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.rentals_data_partitioned_clustered`
+                PARTITION BY DATE(parsed_start_date)
+                CLUSTER BY region_id AS
+                WITH parsed_data AS (
+                    SELECT
+                        *,
+                        PARSE_TIMESTAMP('%Y-%m-%d %H:%M:%S (NZT)', start_date) AS parsed_start_date
+                    FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.rentals_data_external`
+                )
+                SELECT * FROM parsed_data
+                """,
+                'useLegacySql': False,
+            }
+        },
+    )
+    
+    # Task 6b: Create Rentals fact data (dbt-like transformation)
+    create_rentals_fact_task = BigQueryInsertJobOperator(
         task_id='transform_rentals_to_prod',
         configuration={
             'query': {
                 'query': f"""
-                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.rentals_data` AS
+                CREATE OR REPLACE TABLE `{PROJECT_ID}.{BIGQUERY_DATASET_PROD}.rentals_data_fact` AS
                 SELECT
                     listing_id,
                     title,
@@ -376,15 +400,15 @@ with DAG(
                     bedrooms,
                     rent_per_week,
                     pets_okay
-                FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.rentals_data`
+                FROM `{PROJECT_ID}.{BIGQUERY_DATASET_STAGING}.rentals_data_partitioned_clustered`
                 """,
                 'useLegacySql': False,
             }
         },
     )
     
-    # # Define task dependencies
+    # Define task dependencies
     check_auth_task >> [extract_watchlist_task, extract_rental_task]
-    extract_watchlist_task >> upload_watchlist_gcs_task >> create_staging_dataset >> upload_watchlist_to_bq_task >> create_prod_dataset >> transform_watchlist_task
-    extract_rental_task >> upload_rentals_gcs_task >> create_staging_dataset >> upload_rentals_to_bq_task >> create_prod_dataset >> transform_rentals_task
+    extract_watchlist_task >> upload_watchlist_gcs_task >> create_staging_dataset >> upload_watchlist_external_to_bq_task >> create_prod_dataset >> create_watchlist_fact_task
+    extract_rental_task >> upload_rentals_gcs_task >> create_staging_dataset >> upload_rentals_external_to_bq_task >> create_prod_dataset >> partition_and_cluster_rentals_task >> create_rentals_fact_task
     
